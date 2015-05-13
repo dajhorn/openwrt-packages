@@ -8,13 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tinc
-PKG_VERSION:=1.0.25
+PKG_VERSION:=1.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.tinc-vpn.org/packages
-PKG_MD5SUM:=0b91b693f7cf76f481b547d0c86f9578
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=git://github.com/dajhorn/tinc.git
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_VERSION:=158a99f659e3d28a7b7d590adc6163192849f725
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -22,24 +25,23 @@ include $(INCLUDE_DIR)/package.mk
 define Package/tinc
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+liblzo +libopenssl +kmod-tun
+  DEPENDS:= +libopenssl +kmod-tun
   TITLE:=VPN tunneling daemon
   URL:=http://www.tinc-vpn.org/
-  MAINTAINER:=Saverio Proto <zioproto@gmail.com>
+  MAINTAINTER:=Darik Horn <dajhorn@vanadac.com>
   SUBMENU:=VPN
 endef
 
 define Package/tinc/description
-  tinc is a Virtual Private Network (VPN) daemon that uses tunnelling and
-  encryption to create a secure private network between hosts on the Internet.
+  Experimental builds from the tinc-1.1 branch.
 endef
 
 TARGET_CFLAGS += -std=gnu99
 
 CONFIGURE_ARGS += \
-	--with-kernel="$(LINUX_DIR)" \
-	--with-zlib="$(STAGING_DIR)/usr" \
-	--with-lzo-include="$(STAGING_DIR)/usr/include/lzo"
+	--disable-lzo \
+	--disable-readline \
+	--disable-zlib
 
 define Package/tinc/install
 	$(INSTALL_DIR) $(1)/usr/sbin
