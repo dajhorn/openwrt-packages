@@ -1,0 +1,137 @@
+From 4b0e49959edb1005c8521bf0d8f6e83641d2d5e7 Mon Sep 17 00:00:00 2001
+From: Darik Horn <dajhorn@vanadac.com>
+Date: Thu, 14 May 2015 16:48:19 -0400
+Subject: [PATCH] Revert "Add support for out-of-tree ("VPATH") builds."
+
+This reverts commit 13f9bc1ff199bea46d3dde391a848f119e2cc0f0
+because it breaks the OpenWRT buildroot.
+---
+ Makefile.am     |  6 +++---
+ configure.ac    | 14 +++++++-------
+ doc/Makefile.am |  2 +-
+ src/Makefile.am |  8 ++++----
+ 4 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 75eea49..6f733f5 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -11,13 +11,13 @@ EXTRA_DIST = COPYING.README README.android
+ # If git describe works, force autoconf to run in order to make sure we have the
+ # current version number from git in the resulting configure script.
+ configure-version:
+-	-cd $(srcdir) && git describe && autoconf --force
++	-git describe && autoconf --force
+ 
+ # Triggering the README target means we are building a distribution (make dist).
+ README: configure-version
+ 
+ ChangeLog:
+-	(cd $(srcdir) && git log) > ChangeLog
++	git log > ChangeLog
+ 
+ deb:
+ 	dpkg-buildpackage -rfakeroot
+@@ -31,5 +31,5 @@ release:
+ 	rm -f ChangeLog
+ 	$(MAKE) ChangeLog
+ 	echo "Please edit the NEWS file now..."
+-	/usr/bin/editor $(srcdir)/NEWS
++	/usr/bin/editor NEWS
+ 	$(MAKE) dist
+diff --git a/configure.ac b/configure.ac
+index 120a8db..314f2de 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -4,7 +4,7 @@ AC_PREREQ(2.61)
+ AC_INIT([tinc], m4_esyscmd_s((git describe || echo UNKNOWN) | sed 's/release-//'))
+ AC_CONFIG_SRCDIR([src/tincd.c])
+ AC_GNU_SOURCE
+-AM_INIT_AUTOMAKE([info-in-builddir std-options subdir-objects -Wall])
++AM_INIT_AUTOMAKE([std-options subdir-objects -Wall])
+ AC_CONFIG_HEADERS([config.h])
+ 
+ # Enable GNU extensions.
+@@ -161,13 +161,13 @@ dnl We do this in multiple stages, because unlike Linux all the other operating
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS([stdbool.h syslog.h sys/file.h sys/ioctl.h sys/mman.h sys/param.h sys/resource.h sys/socket.h sys/time.h sys/uio.h sys/un.h sys/wait.h netdb.h arpa/inet.h dirent.h])
+ AC_CHECK_HEADERS([net/if.h net/if_types.h linux/if_tun.h net/if_tun.h net/tun/if_tun.h net/if_tap.h net/tap/if_tap.h net/ethernet.h net/if_arp.h netinet/in_systm.h netinet/in.h netinet/in6.h time.h netpacket/packet.h],
+-  [], [], [#include "$srcdir/src/have.h"]
++  [], [], [#include "src/have.h"]
+ )
+ AC_CHECK_HEADERS([netinet/if_ether.h netinet/ip.h netinet/ip6.h resolv.h],
+-  [], [], [#include "$srcdir/src/have.h"]
++  [], [], [#include "src/have.h"]
+ )
+ AC_CHECK_HEADERS([netinet/tcp.h netinet/ip_icmp.h netinet/icmp6.h],
+-  [], [], [#include "$srcdir/src/have.h"]
++  [], [], [#include "src/have.h"]
+ )
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+@@ -182,13 +182,13 @@ tinc_ATTRIBUTE(__malloc__)
+ tinc_ATTRIBUTE(__warn_unused_result__)
+ 
+ AC_CHECK_TYPES([socklen_t, struct ether_header, struct arphdr, struct ether_arp, struct in_addr, struct addrinfo, struct ip, struct icmp, struct in6_addr, struct sockaddr_in6, struct ip6_hdr, struct icmp6_hdr, struct nd_neighbor_solicit, struct nd_opt_hdr], , ,
+-  [#include "$srcdir/src/have.h"]
++  [#include "src/have.h"]
+ )
+ 
+ dnl Checks for library functions.
+ AC_TYPE_SIGNAL
+ AC_CHECK_FUNCS([asprintf daemon fchmod flock ftime fork get_current_dir_name gettimeofday mlockall putenv random select strdup strerror strsignal strtol system time usleep unsetenv vsyslog writev],
+-  [], [], [#include "$srcdir/src/have.h"]
++  [], [], [#include "src/have.h"]
+ )
+ 
+ dnl Support for SunOS
+@@ -201,7 +201,7 @@ AC_CHECK_FUNC(gethostbyname, [], [
+ ])
+ 
+ AC_CHECK_DECLS([freeaddrinfo, gai_strerror, getaddrinfo, getnameinfo],
+-  [], [], [#include "$srcdir/src/have.h"]
++  [], [], [#include "src/have.h"]
+ )
+ 
+ AC_CHECK_DECLS([res_init], [AC_CHECK_LIB(resolv, res_init)], [], [
+diff --git a/doc/Makefile.am b/doc/Makefile.am
+index 5c64ffa..a666d3b 100644
+--- a/doc/Makefile.am
++++ b/doc/Makefile.am
+@@ -17,7 +17,7 @@ transform = s/ginstall/install/; @program_transform_name@
+ # see GNUmakefile and Makefile.maint.
+ 
+ sample-config.tar.gz: sample-config
+-	GZIP=$(GZIP_ENV) $(AMTAR) chozf $@ --exclude .svn $<
++	GZIP=$(GZIP_ENV) $(AMTAR) chozf sample-config.tar.gz --exclude .svn sample-config
+ 
+ tincd.8.html: tincd.8
+ 	w3mman2html $? > $@
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 2ae43b0..04fe2f8 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -3,11 +3,11 @@
+ sbin_PROGRAMS = tincd tinc sptps_test sptps_keypair
+ 
+ ## Make sure version.c is always rebuilt with the latest git information
+-.PHONY: $(srcdir)/version.c version_git.h
++.PHONY: version.c version_git.h
+ version_git.h:
+ 	echo >$@
+-	-(cd $(srcdir) && git describe) && echo '#define GIT_DESCRIPTION "'`(cd $(srcdir) && git describe) | sed 's/release-//'`'"' >$@
+-$(srcdir)/version.c: version_git.h
++	-git describe && echo '#define GIT_DESCRIPTION "'`git describe | sed 's/release-//'`'"' >$@
++version.c: version_git.h
+ 
+ if LINUX
+ sbin_PROGRAMS += sptps_speed
+@@ -260,4 +260,4 @@ if TUNEMU
+ LIBS += -lpcap
+ endif
+ 
+-AM_CFLAGS = -DCONFDIR=\"$(sysconfdir)\" -DLOCALSTATEDIR=\"$(localstatedir)\" -DSBINDIR=\"$(sbindir)\" -I.
++AM_CFLAGS = -DCONFDIR=\"$(sysconfdir)\" -DLOCALSTATEDIR=\"$(localstatedir)\" -DSBINDIR=\"$(sbindir)\"
+-- 
+1.9.1
+
