@@ -7,20 +7,14 @@
 
 include $(TOPDIR)/rules.mk
 
-# Declare this separately to avoid variable mangling later.
-PKG_COMMITISH:=613c121cdceec0199dc4d056857be021ed1d21de
-
 PKG_NAME:=tinc
-PKG_VERSION:=1.1~git.$(PKG_COMMITISH)
+PKG_VERSION:=1.0.26
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=https://github.com/gsliepen/tinc.git
-PKG_SOURCE_VERSION:=$(PKG_COMMITISH)
+PKG_SOURCE_URL:=http://www.tinc-vpn.org/packages
+PKG_MD5SUM:=a8c168227fa42cbfcd4983247bf609ca
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -28,11 +22,10 @@ include $(INCLUDE_DIR)/package.mk
 define Package/tinc
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+kmod-ipv6 +kmod-tun +liblzo +libncurses +libopenssl +libreadline
+  DEPENDS:=+liblzo +libopenssl +kmod-tun
   TITLE:=VPN tunneling daemon
   URL:=http://www.tinc-vpn.org/
-  #MAINTAINER:=Saverio Proto <zioproto@gmail.com>
-  MAINTAINER:=Darik Horn <dajhorn@vanadac.com>
+  MAINTAINER:=Saverio Proto <zioproto@gmail.com>
   SUBMENU:=VPN
 endef
 
@@ -50,7 +43,6 @@ CONFIGURE_ARGS += \
 
 define Package/tinc/install
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/tinc $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/tincd $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) files/$(PKG_NAME).init $(1)/etc/init.d/$(PKG_NAME)
