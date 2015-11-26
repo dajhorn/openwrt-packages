@@ -7,14 +7,20 @@
 
 include $(TOPDIR)/rules.mk
 
+# Declare this separately to avoid variable mangling later.
+PKG_COMMITISH:=ab2d78d86ca38bf351bf623ad5959127ac6f8435
+
 PKG_NAME:=tinc
-PKG_VERSION:=1.0.26
+PKG_VERSION:=1.1~git.$(PKG_COMMITISH)
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.tinc-vpn.org/packages
-PKG_MD5SUM:=a8c168227fa42cbfcd4983247bf609ca
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_URL:=https://github.com/dajhorn/tinc.git
+PKG_SOURCE_VERSION:=$(PKG_COMMITISH)
 
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -22,10 +28,11 @@ include $(INCLUDE_DIR)/package.mk
 define Package/tinc
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+liblzo +libopenssl +kmod-tun
+  DEPENDS:=+kmod-tun +libopenssl
   TITLE:=VPN tunneling daemon
   URL:=http://www.tinc-vpn.org/
-  MAINTAINER:=Saverio Proto <zioproto@gmail.com>
+  #MAINTAINER:=Saverio Proto <zioproto@gmail.com>
+  MAINTAINER:=Darik Horn <dajhorn@vanadac.com>
   SUBMENU:=VPN
 endef
 
@@ -37,12 +44,16 @@ endef
 TARGET_CFLAGS += -std=gnu99
 
 CONFIGURE_ARGS += \
-	--with-kernel="$(LINUX_DIR)" \
-	--with-zlib="$(STAGING_DIR)/usr" \
-	--with-lzo-include="$(STAGING_DIR)/usr/include/lzo"
+	--disable-curses \
+	--disable-lzo \
+	--disable-readline \
+	--disable-zlib \
+	--enable-lz4-builtin \
+	--with-kernel="$(LINUX_DIR)"
 
 define Package/tinc/install
 	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/tinc $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/tincd $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) files/$(PKG_NAME).init $(1)/etc/init.d/$(PKG_NAME)
